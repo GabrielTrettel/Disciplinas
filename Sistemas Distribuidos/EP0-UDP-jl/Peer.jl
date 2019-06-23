@@ -1,13 +1,24 @@
+module Peer end
+
+export udp_recv,
+       udp_send
+       # udp_init_server,
+       # udp_init_client
+
+
 using Sockets
 using Serialization
+
+include("Package.jl")
+
 
 function Input(prompt)
     print(prompt)
     readline()
 end
 
-PORTS_OWNER = Dict([("Jorge", 4301), ("Cleiton", 4302), ("Romildo", 430), ("Chirley", 4304),
-                ("Claudiene", 4305), ("Winderson", 4306), ("Rosvaldo", 4307)])
+PORTS_OWNER = Dict([("T1", 4301), ("T2", 4302), ("T3", 430), ("T4", 4304),
+                ("T5", 4305), ("T6", 4306), ("T7", 4307)])
 
 const HOST = ip"127.0.0.1"
 
@@ -20,7 +31,7 @@ function udp_recv(socket::UDPSocket, host::IPAddr, port::Integer)
         while true
             addr,package = recvfrom(socket)
             msg = String(package)
-            println("Mensagem de $addr é: $msg")
+            println("Msg from $addr is: $msg")
             if msg == "break"
                 close(socket)
                 break
@@ -62,11 +73,11 @@ function main()
 
     elseif ARGS[end] == "c"
         while true
-            name = String(Input("\nDigite para quem enviar a mensagem $(keys(PORTS_OWNER)): "))
+            name = String(Input("\nWho do you want to call? $(keys(PORTS_OWNER)): "))
             if name == "q" close(socket); break end
 
             port = PORTS_OWNER[name]
-            msg = String(Input("Digite a mensagem a enviar para $name: "))
+            msg = String(Input("Type msg to $name: "))
 
             udp_send(socket,HOST,port,msg)
         end
