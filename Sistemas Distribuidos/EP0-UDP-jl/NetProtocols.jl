@@ -1,7 +1,8 @@
 module NetProtocols end
 
 export test_listen_protocol,
-       test_bd_protocol
+       test_bd_protocol,
+       _udp_broadcast
 
 include("Network.jl")
 include("NetUtils.jl")
@@ -12,6 +13,7 @@ using Sockets
 
 function test_listen_protocol()
     net::Interface = get_network_interface()
+    full_msg_buffer = Channel{}(1024)
 
     while true
         addr,msg = udp_recv(net)
@@ -22,20 +24,20 @@ end
 
 
 function test_bd_protocol(msg::Any)
-    socket = UDPSocket()
-    host = Net_utils().host
-    ports = [x for x in values(Net_utils().ports_owner)]
-
     while true
-        _udp_broadcast(socket, host, ports, msg)
+        _udp_broadcast(msg)
         break
     end
 end
 
 
 
-function _udp_broadcast(iface::Interface, msg::Any)
-   for port in ports
-       udp_send( msg)
+function _udp_broadcast(msg::Any)
+    socket = UDPSocket()
+    host = Net_utils().host
+    ifcs = [Interface(socket,p,host,"",) for p in values(Net_utils().ports_owner)]
+
+   for iface in ifcs
+       udp_send(iface, msg, "trettel")
    end
 end

@@ -13,21 +13,20 @@ include("Package.jl")
 
 function udp_recv(net::Interface)
     addr,package = recvfrom(net.socket)
-    msg::Datagram = decode_and_merge(package)
+    dg::Datagram = decode(package)
 
-    return addr,msg
+    return addr,decode_msg([dg])
 end
 
 
-# function udp_recv
 
-
-
-function udp_send(iface::Interface, msg::Any)
+function udp_send(iface::Interface, msg::Any, owner::String)
     # Send an string to who is listening on 'host' in 'port'
     # TODO: break msg into parts and send individually
     msg = encode_and_split(msg, owner)
-    send(iface.socket, iface.host, iface.port, msg)
+    for dg in msg
+        send(iface.socket, iface.host, iface.port, dg)
+    end
 end
 
 
@@ -39,7 +38,7 @@ function get_network_interface() :: Interface
     name,port = ("","")
     for a in Net_utils().port_queue
         name,port = a
-        if bind(socket, HOST, port)
+        if bind(socket, host, port)
             println("\33[32mPort $port in use by $name")
             break
         end
