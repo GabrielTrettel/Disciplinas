@@ -1,7 +1,8 @@
 module Network end
 
 export udp_recv,
-       udp_send
+       udp_send,
+       get_network_interface
        # udp_init_server,
        # udp_init_client
 
@@ -10,29 +11,31 @@ include("NetUtils.jl")
 include("Package.jl")
 
 
-function udp_recv(socket::UDPSocket, host::IPAddr, port::Integer)
-    # TODO: merge msgs in correct order and build the entire msg
+function udp_recv(net::Interface)
+    addr,package = recvfrom(net.socket)
+    msg::Datagram = decode_and_merge(package)
 
-    addr,package = recvfrom(socket)
-
-    msg = decode_and_merge(package)
     return addr,msg
 end
 
 
+# function udp_recv
 
 
-function udp_send(socket::UDPSocket, host::IPAddr, port::Integer, msg::Any)
+
+function udp_send(iface::Interface, msg::Any)
     # Send an string to who is listening on 'host' in 'port'
     # TODO: break msg into parts and send individually
-    msg = encode_and_split(msg)
-    send(socket, host, port, msg)
+    msg = encode_and_split(msg, owner)
+    send(iface.socket, iface.host, iface.port, msg)
 end
 
 
 
-function bind_port(socket::UDPSocket)
-    HOST = Net_utils().host
+function get_network_interface() :: Interface
+    socket = UDPSocket()
+
+    host = Net_utils().host
     name,port = ("","")
     for a in Net_utils().port_queue
         name,port = a
@@ -42,5 +45,5 @@ function bind_port(socket::UDPSocket)
         end
     end
 
-   return port,name
+    return Interface(socket,port,host,name)
 end

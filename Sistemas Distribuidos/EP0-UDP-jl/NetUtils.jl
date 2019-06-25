@@ -1,9 +1,18 @@
 # module NetUtils end
 
 export Net_utils,
-       Input
+       Input,
+       Interface
 
 using Sockets
+
+mutable struct Interface
+    socket::UDPSocket
+    port::Int64
+    host::IPAddr
+    name::String
+end
+
 
 mutable struct Net_utils
     port_queue  :: Array{Tuple{String,Int64}}
@@ -19,7 +28,9 @@ mutable struct Net_utils
         ports_owner = Dict(port_queue)
         used_ports = similar(port_queue)
         host = ip"127.0.0.1"
-        mtu = 65508 # mtu arg of loopback from ifconfig
+        # Maximum Transmission Unit (mtu) is a value defined by OS
+        # indicating how long a msg can be. In my computer, 65508 is the limit
+        mtu = 1024
 
         new(port_queue, ports_owner, used_ports, host, mtu)
     end

@@ -17,9 +17,11 @@ function consumer(c::Channel, done::Channel)
         if msg == "q" break end
         println("\33[37m Rcv $msg from Channel")
     end
+
     put!(done, true)
 
 end
+
 
 
 function runner()
