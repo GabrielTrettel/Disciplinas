@@ -1,10 +1,10 @@
 using Distributed
 
 function producer(c::Channel, done::Channel)
-    for i = 1:10
+    for i = 1:100000000
         println("\33[34m Put msg $i in Channel")
         put!(c, string(i))
-        sleep(1)
+        # sleep(1)
     end
     put!(c, "q")
     put!(done, true)
@@ -46,3 +46,14 @@ function runner()
 end
 
 @time runner()
+
+
+
+
+
+
+
+f(x) = 2x
+
+
+f(2)

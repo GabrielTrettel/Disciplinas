@@ -1,8 +1,8 @@
 module Network end
 
-export udp_recv,
-       udp_send,
-       get_network_interface
+export recv_msg,
+       send_msg,
+       Message
        # udp_init_server,
        # udp_init_client
 
@@ -10,22 +10,40 @@ export udp_recv,
 include("NetUtils.jl")
 include("Package.jl")
 
+mutable struct Message
+    value :: Any
+    destination_port :: Int64
+end
 
-function udp_recv(net::Interface)
-    addr,package = recvfrom(net.socket)
-    dg::Datagram = decode(package)
 
-    return addr,decode_msg([dg])
+function recv_msg(rcv_msg_buffer::Channel{Any})
+    net::Interface = get_network_interface()
+
+    while true
+        addr,package = recvfrom(net.socket)
+
+        # TODO implement multiple msg recv
+        dg::Datagram = decode(package)
+        msg = decode_msg([dg])
+
+        put!(rcv_msg_buffer, msg)
+    end
 end
 
 
 
-function udp_send(iface::Interface, msg::Any, owner::String)
+function send_msg(send_msg_buffer::Channel{Message})
     # Send an string to who is listening on 'host' in 'port'
-    # TODO: break msg into parts and send individually
-    msg = encode_and_split(msg, owner)
-    for dg in msg
-        send(iface.socket, iface.host, iface.port, dg)
+    socket = UDPSocket()
+    host = ip"127.0.0.1"
+
+    while true
+        msg = take!(send_msg_buffer)
+        
+        data_grams = encode_and_split(msg.value)
+        for dg in data_grams
+            send(socket, host, msg.destination_port, dg)
+        end
     end
 end
 

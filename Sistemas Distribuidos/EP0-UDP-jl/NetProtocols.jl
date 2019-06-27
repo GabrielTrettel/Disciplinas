@@ -10,34 +10,28 @@ include("NetUtils.jl")
 using Sockets
 
 
-
 function test_listen_protocol()
-    net::Interface = get_network_interface()
-    full_msg_buffer = Channel{}(1024)
+    rcv_msg_buffer = Channel{Any}(1024)
+
+    @async recv_msg(rcv_msg_buffer)
 
     while true
-        addr,msg = udp_recv(net)
-        println("\33[34m Msg from $addr is: $(msg)")
+        msg = take!(rcv_msg_buffer)
+        println("\33[34m Msg recieved: $(msg)")
     end
-
 end
 
 
 function test_bd_protocol(msg::Any)
+    send_msg_buffer = Channel{Message}(1024)
+    @async send_msg(send_msg_buffer)
+
     while true
-        _udp_broadcast(msg)
-        break
+        sleep(1)
+        for port in values(Net_utils().ports_owner)
+            msg_s = Message(msg,port)
+            put!(send_msg_buffer, msg_s)
+        end
+
     end
-end
-
-
-
-function _udp_broadcast(msg::Any)
-    socket = UDPSocket()
-    host = Net_utils().host
-    ifcs = [Interface(socket,p,host,"",) for p in values(Net_utils().ports_owner)]
-
-   for iface in ifcs
-       udp_send(iface, msg, "trettel")
-   end
 end

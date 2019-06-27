@@ -11,12 +11,13 @@ include("NetUtils.jl")
 
 using Serialization
 
+
 mutable struct Datagram
-    msg::Any
-    command::String
-    sequence::Int64
-    total::Int64
-    owner::String
+    msg      :: Any
+    command  :: String
+    sequence :: Int64
+    total    :: Int64
+    owner    :: String
 end
 
 
@@ -26,11 +27,11 @@ function encode(x::Any) :: Vector{UInt8}
     return iob.data
 end
 
-function encode_and_split(msg::Any, owner::String, command::String="")
+
+function encode_and_split(msg::Any)
     byte_array = encode(msg)
 
-    MAX_MSG_SIZE = Net_utils().mtu - (sizeof(Datagram) - sizeof(owner) - sizeof(command))
-    # MAX_MSG_SIZE = 1024 - sizeof(Datagram)
+    MAX_MSG_SIZE = Net_utils().mtu - sizeof(Datagram)
 
     MSG_SIZE = sizeof(byte_array)
     TOTAL_OF_PKGS = ceil(MSG_SIZE / MAX_MSG_SIZE)
@@ -42,10 +43,11 @@ function encode_and_split(msg::Any, owner::String, command::String="")
     while i < MSG_SIZE
         msg_split = byte_array[i:min(MSG_SIZE, j)]
 
-        dg = Datagram(msg_split,command,seq,TOTAL_OF_PKGS,owner)
+        dg = Datagram(msg_split,"",seq,TOTAL_OF_PKGS,"")
 
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
+        # push!(dg_vec, dg)
 
     end
 
@@ -55,7 +57,7 @@ end
 
 
 
-function decode(msgs::Vector{UInt8})
+function decode(msgs::Vector{UInt8}) :: Any
     stream = IOBuffer(msgs)
     original_data = Serialization.deserialize(stream)
 end
@@ -64,6 +66,7 @@ end
 
 function decode_msg(dgrams::Vector{Datagram}) :: Any
     total_msg = UInt8[]
+
     sort!(dgrams, by=dg -> dg.sequence)
 
     for dg in dgrams
@@ -71,10 +74,11 @@ function decode_msg(dgrams::Vector{Datagram}) :: Any
     end
 
     full_msg = decode(total_msg)
+    return full_msg
 end
 
 
-
-        # splitted = encode_and_split("a"^1024,"trettfl")
-        # sizeof(splitted[1])
-        # msg = decode_msg(splitted)
+# TEST SECTION
+# splitted = encode_and_split("a"^10024)
+# sizeof(splitted[1])
+# msg = decode_msg(splitted)
