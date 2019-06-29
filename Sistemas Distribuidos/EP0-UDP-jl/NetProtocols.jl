@@ -1,8 +1,7 @@
 module NetProtocols end
 
 export test_listen_protocol,
-       test_bd_protocol,
-       _udp_broadcast
+       test_bd_protocol
 
 include("Network.jl")
 include("NetUtils.jl")
@@ -22,12 +21,15 @@ function test_listen_protocol()
 end
 
 
-function test_bd_protocol(msg::Any)
+function test_bd_protocol()
     send_msg_buffer = Channel{Message}(1024)
     @async send_msg(send_msg_buffer)
 
     while true
         sleep(1)
+        print("Enter to send big msg")
+        msg = string(readline())
+        msg = [1, 2, 3, 4]
         for port in values(Net_utils().ports_owner)
             msg_s = Message(msg,port)
             put!(send_msg_buffer, msg_s)

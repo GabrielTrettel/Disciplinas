@@ -3,8 +3,6 @@ module Network end
 export recv_msg,
        send_msg,
        Message
-       # udp_init_server,
-       # udp_init_client
 
 
 include("NetUtils.jl")
@@ -16,18 +14,40 @@ mutable struct Message
 end
 
 
+
 function recv_msg(rcv_msg_buffer::Channel{Any})
     net::Interface = get_network_interface()
+    datagrams_map = Dict{String, Array}()
 
     while true
         addr,package = recvfrom(net.socket)
-
-        # TODO implement multiple msg recv
         dg::Datagram = decode(package)
-        msg = decode_msg([dg])
 
-        put!(rcv_msg_buffer, msg)
+        msg_id = dg.msg_id
+        if haskey(datagrams_map, msg_id) == false
+            datagrams_map[msg_id] = Any[0 for _ in 1:dg.total]
+        end
+
+        msg_seq = dg.sequence
+        datagrams_map[msg_id][msg_seq] = dg
+
+
+        possible_msg = verify_to_send(datagrams_map)
+        if possible_msg != -1
+            msg = decode_msg(possible_msg)
+            put!(rcv_msg_buffer, msg)
+        end
     end
+end
+
+
+function verify_to_send(datagrams_map::Dict{String, Array})
+    for (key, value) in datagrams_map
+        if isempty(filter(x -> 0 == x, value))
+            return pop!(datagrams_map, key)
+        end
+    end
+    return -1
 end
 
 
@@ -39,7 +59,7 @@ function send_msg(send_msg_buffer::Channel{Message})
 
     while true
         msg = take!(send_msg_buffer)
-        
+
         data_grams = encode_and_split(msg.value)
         for dg in data_grams
             send(socket, host, msg.destination_port, dg)

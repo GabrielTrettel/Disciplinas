@@ -8,11 +8,7 @@ function main()
         test_listen_protocol()
 
     elseif ARGS[end] == "c"
-        while true
-            msg = "Message broadcasted to EVERYONE"
-            test_bd_protocol(msg)
-            sleep(1)
-        end
+        test_bd_protocol()
     end
 end
 

@@ -14,6 +14,7 @@ using Serialization
 
 mutable struct Datagram
     msg      :: Any
+    msg_id   :: String
     command  :: String
     sequence :: Int64
     total    :: Int64
@@ -21,15 +22,23 @@ mutable struct Datagram
 end
 
 
-function encode(x::Any) :: Vector{UInt8}
-    iob = IOBuffer()
+function encode(x::Any)
+    iob = PipeBuffer()
     Serialization.serialize(iob, x)
     return iob.data
 end
 
 
+function decode(msgs::Vector{UInt8}) :: Any
+    stream = PipeBuffer(msgs)
+    original_data = Serialization.deserialize(stream)
+    return original_data
+end
+
+
 function encode_and_split(msg::Any)
     byte_array = encode(msg)
+    msg_h = string(hash(msg))
 
     MAX_MSG_SIZE = Net_utils().mtu - sizeof(Datagram)
 
@@ -43,7 +52,7 @@ function encode_and_split(msg::Any)
     while i < MSG_SIZE
         msg_split = byte_array[i:min(MSG_SIZE, j)]
 
-        dg = Datagram(msg_split,"",seq,TOTAL_OF_PKGS,"")
+        dg = Datagram(msg_split, msg_h, "", seq, TOTAL_OF_PKGS, "")
 
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
@@ -57,17 +66,10 @@ end
 
 
 
-function decode(msgs::Vector{UInt8}) :: Any
-    stream = IOBuffer(msgs)
-    original_data = Serialization.deserialize(stream)
-end
-
-
-
-function decode_msg(dgrams::Vector{Datagram}) :: Any
+function decode_msg(dgrams) :: Any
     total_msg = UInt8[]
 
-    sort!(dgrams, by=dg -> dg.sequence)
+    sort!(dgrams, by=dg -> dg.sequence) # Just to be sure
 
     for dg in dgrams
         append!(total_msg, dg.msg)
