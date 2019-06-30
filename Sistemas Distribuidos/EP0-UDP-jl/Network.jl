@@ -7,6 +7,7 @@ export recv_msg,
 
 include("NetUtils.jl")
 include("Package.jl")
+include("Styles.jl")
 
 mutable struct Message
     value :: Any
@@ -63,7 +64,7 @@ function get_network_interface() :: Interface
     for a in Net_utils().port_queue
         name,port = a
         if bind(socket, host, port)
-            println("\33[32mPort $port in use by $name")
+            println("$CBLINK $CGREEN Port $port in use by $name $CEND")
             break
         end
     end
