@@ -19,10 +19,13 @@ mutable struct Datagram
     sequence :: Int64
     total    :: Int64
     owner    :: String
+    function Datagram(msg="", msg_id="-1", command="", sequence=0, total=0, owner="")
+        new(msg, msg_id, command, sequence, total, owner)
+    end
 end
 
 
-function encode(x::Any)
+function encode(x::Any) :: Array{UInt8}
     iob = PipeBuffer()
     Serialization.serialize(iob, x)
     return iob.data
@@ -36,7 +39,7 @@ function decode(msgs::Vector{UInt8}) :: Any
 end
 
 
-function encode_and_split(msg::Any)
+function encode_and_split(msg::Any) :: Array{Array{UInt8}}
     byte_array = encode(msg)
     msg_h = string(hash(msg))
 
@@ -45,7 +48,7 @@ function encode_and_split(msg::Any)
     MSG_SIZE = sizeof(byte_array)
     TOTAL_OF_PKGS = ceil(MSG_SIZE / MAX_MSG_SIZE)
 
-    dg_vec = []
+    dg_vec::Array{Array{UInt8}} = []
 
     i = 1; j = MAX_MSG_SIZE
     seq = 1
@@ -57,11 +60,8 @@ function encode_and_split(msg::Any)
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
         # push!(dg_vec, dg)
-
     end
-
     return dg_vec
-
 end
 
 

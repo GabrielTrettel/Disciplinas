@@ -28,8 +28,11 @@ mutable struct Net_utils
         ports_owner = Dict(port_queue)
         used_ports = similar(port_queue)
         host = ip"127.0.0.1"
-        # Maximum Transmission Unit (mtu) is a value defined by OS
-        # indicating how long a msg can be. In my computer, 65508 is the limit
+        #=
+            Maximum Transmission Unit (mtu) is a value defined by OS
+            indicating how long a msg can be. In my computer, 65508 is the limit.
+            - 1024 by convention
+        =#
         mtu = 1024
 
         new(port_queue, ports_owner, used_ports, host, mtu)

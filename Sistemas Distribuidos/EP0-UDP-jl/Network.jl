@@ -14,10 +14,9 @@ mutable struct Message
 end
 
 
-
-function recv_msg(rcv_msg_buffer::Channel{Any})
+function recv_msg(rcv_msg_buffer::Channel{Any}) :: Nothing
     net::Interface = get_network_interface()
-    datagrams_map = Dict{String, Array}()
+    datagrams_map = Dict{String, Array{Datagram}}()
 
     while true
         addr,package = recvfrom(net.socket)
@@ -25,34 +24,21 @@ function recv_msg(rcv_msg_buffer::Channel{Any})
 
         msg_id = dg.msg_id
         if haskey(datagrams_map, msg_id) == false
-            datagrams_map[msg_id] = Any[0 for _ in 1:dg.total]
+            datagrams_map[msg_id] = [Datagram() for _ in 1:dg.total]
         end
 
         msg_seq = dg.sequence
         datagrams_map[msg_id][msg_seq] = dg
 
-
-        possible_msg = verify_to_send(datagrams_map)
-        if possible_msg != -1
-            msg = decode_msg(possible_msg)
+        if isempty(filter(x -> "-1" == x.msg_id, datagrams_map[msg_id]))
+            msg = decode_msg(pop!(datagrams_map, msg_id))
             put!(rcv_msg_buffer, msg)
         end
     end
 end
 
 
-function verify_to_send(datagrams_map::Dict{String, Array})
-    for (key, value) in datagrams_map
-        if isempty(filter(x -> 0 == x, value))
-            return pop!(datagrams_map, key)
-        end
-    end
-    return -1
-end
-
-
-
-function send_msg(send_msg_buffer::Channel{Message})
+function send_msg(send_msg_buffer::Channel{Message}) :: Nothing
     # Send an string to who is listening on 'host' in 'port'
     socket = UDPSocket()
     host = ip"127.0.0.1"
