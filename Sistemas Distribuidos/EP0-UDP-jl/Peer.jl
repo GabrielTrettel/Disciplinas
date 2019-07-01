@@ -1,6 +1,7 @@
-module Peer end
+module Peer
 
 include("NetProtocols.jl")
+using .NetProtocols
 
 
 function main()
@@ -11,5 +12,6 @@ function main()
         test_bd_protocol()
     end
 end
-
 main()
+
+end # module

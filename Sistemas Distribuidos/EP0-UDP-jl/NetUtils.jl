@@ -1,10 +1,11 @@
-# module NetUtils end
+module NetUtils
+
+using Sockets
 
 export Net_utils,
        Input,
        Interface
 
-using Sockets
 
 mutable struct Interface
     socket::UDPSocket
@@ -44,3 +45,5 @@ function Input(prompt)
     print(prompt)
     readline()
 end
+
+end # module

@@ -1,4 +1,4 @@
-module NetProtocols end
+module NetProtocols
 
 export test_listen_protocol,
        test_bd_protocol
@@ -6,9 +6,9 @@ export test_listen_protocol,
 include("Network.jl")
 include("NetUtils.jl")
 include("Styles.jl")
+using .Network
+using .NetUtils
 
-
-using Sockets
 
 
 function test_listen_protocol()
@@ -40,3 +40,5 @@ function test_bd_protocol()
 
     end
 end
+
+end # module

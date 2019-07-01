@@ -1,13 +1,16 @@
-module Network end
+module Network
 
-export recv_msg,
-       send_msg,
-       Message
+export recv_msg, send_msg, Message
 
+using Sockets
 
-include("NetUtils.jl")
-include("Package.jl")
 include("Styles.jl")
+include("Package.jl")
+include("NetUtils.jl")
+using .Package
+using .NetUtils
+
+
 
 mutable struct Message
     value :: Any
@@ -37,7 +40,6 @@ function recv_msg(rcv_msg_buffer::Channel{Any}) :: Nothing
         end
     end
 end
-
 
 function send_msg(send_msg_buffer::Channel{Message}) :: Nothing
     # Send an string to who is listening on 'host' in 'port'
@@ -71,3 +73,5 @@ function get_network_interface() :: Interface
 
     return Interface(socket,port,host,name)
 end
+
+end # module

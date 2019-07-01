@@ -1,16 +1,14 @@
-module Package end
+module Package
+
+using Serialization
 
 export encode_and_split,
        decode_msg,
        decode,
        Datagram
 
-
 include("NetUtils.jl")
-
-
-using Serialization
-
+using .NetUtils
 
 mutable struct Datagram
     msg      :: Any
@@ -79,6 +77,7 @@ function decode_msg(dgrams) :: Any
     return full_msg
 end
 
+end # module
 
 # TEST SECTION
 # splitted = encode_and_split("a"^10024)
