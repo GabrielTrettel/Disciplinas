@@ -34,7 +34,7 @@ end
 function test_listen_protocol(channel::Channel)
     while true
         msg = take!(channel)
-        msg = msg.value
+        # msg = msg.value
         println("$CVIOLET2 recieved: $msg of type $(typeof(msg))")
     end
 end

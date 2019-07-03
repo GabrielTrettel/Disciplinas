@@ -59,13 +59,32 @@ function teste(ch)
         if istaskdone(task) break end
         println("Tô vivo $i")
         sleep(2)
+        açlsmdç
     end
     println("to morrendo mesmo")
 
 end
 
-ch = Channel(10)
-@async teste(ch)
-sleep(3)
-put!(ch, 1)
+# ch = Channel(10)
+#
+#
+# @async begin
+#     try
+#         teste(ch)
+#     catch e
+#         println(e)
+#     end
+# end
+#
+#
+# sleep(3)
+# put!(ch, 1)
+# wait()
+f(x) = sleep(x)
+
+t = @async f(2)
+println("antes do fetch")
+fetch(t)
+println("depois do fetch")
+
 wait()
