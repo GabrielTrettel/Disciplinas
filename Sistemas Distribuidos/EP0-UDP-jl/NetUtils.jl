@@ -12,8 +12,8 @@ mutable struct Interface
     port::Union{Int64,Nothing}
     host::Union{IPAddr,Nothing}
     name::Union{String,Nothing}
-    function Interface()
-        new(nothing, nothing, nothing, nothing)
+    function Interface(socket=nothing, port=nothing, host=nothing, name=nothing)
+        new(socket,port,host,name)
     end
 end
 

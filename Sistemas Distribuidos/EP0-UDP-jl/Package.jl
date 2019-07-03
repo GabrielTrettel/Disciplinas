@@ -41,7 +41,7 @@ function decode(msgs::Vector{UInt8}) :: Any
 end
 
 
-function encode_and_split(msg::Any, net::Interface, command::String) :: Tuple{String,DataGramVec}
+function encode_and_split(msg, net, command) :: Tuple{String,DataGramVec}
     byte_array = encode(msg)
     msg_h = string(hash(msg))
 

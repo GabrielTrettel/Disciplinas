@@ -5,6 +5,7 @@ export test_broadcast
 include("Network.jl")
 include("NetUtils.jl")
 include("Styles.jl")
+include("Utils.jl")
 using .Network
 using .NetUtils
 
@@ -13,7 +14,14 @@ using .NetUtils
 function test_broadcast(type)
     rcv_msg_buffer = Channel{Any}(1024)
     send_msg_buffer = Channel{Any}(1024)
-    @async bind_connections(rcv_msg_buffer, send_msg_buffer)
+    @async begin
+        try
+            bind_connections(rcv_msg_buffer, send_msg_buffer)
+        catch y
+            show_stack_trace()
+        end
+    end
+
 
     if type == "s"
         test_listen_protocol(rcv_msg_buffer)
@@ -26,14 +34,15 @@ end
 function test_listen_protocol(channel::Channel)
     while true
         msg = take!(channel)
+        msg = msg.value
         println("$CVIOLET2 recieved: $msg of type $(typeof(msg))")
     end
 end
 
 
 function test_bd_protocol(channel)
+    sleep(1)
     while true
-        sleep(1)
         print("$CBLUE Hit enter to send big msg")
         msg = string(readline())
         msg = "x -> x+1"
