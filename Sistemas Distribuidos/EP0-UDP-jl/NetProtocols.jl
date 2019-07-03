@@ -11,22 +11,26 @@ using .NetUtils
 
 
 
-function test_listen_protocol()
+function test_broadcast(type)
     rcv_msg_buffer = Channel{Any}(1024)
+    send_msg_buffer = Channel{Message}(1024)
+    @async bind_connections(rcv_msg_buffer, send_msg_buffer)
 
-    @async recv_msg(rcv_msg_buffer)
+    if type == "s"
+        test_listen_protocol(rcv_msg_buffer)
+    else
+        test_bd_protocol(send_msg_buffer)
+end
 
+function test_listen_protocol(channel::Channel)
     while true
-        msg = take!(rcv_msg_buffer)
+        msg = take!(channel)
         println("$CVIOLET2 recieved: $msg of type $(typeof(msg))")
     end
 end
 
 
-function test_bd_protocol()
-    send_msg_buffer = Channel{Message}(1024)
-    @async send_msg(send_msg_buffer)
-
+function test_bd_protocol(channel)
     while true
         sleep(1)
         print("$CBLUE Hit enter to send big msg")
@@ -35,7 +39,7 @@ function test_bd_protocol()
 
         for port in values(Net_utils().ports_owner)
             msg_s = Message(msg,port)
-            put!(send_msg_buffer, msg_s)
+            put!(channel, msg_s)
         end
 
     end

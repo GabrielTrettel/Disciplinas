@@ -1,7 +1,7 @@
 using Distributed
 
 function producer(c::Channel, done::Channel)
-    for i = 1:100000000
+    for i = 1:10
         println("\33[34m Put msg $i in Channel")
         put!(c, string(i))
         # sleep(1)
@@ -29,31 +29,39 @@ function runner()
     done = Channel(2)
 
     # Utilizando Tasks (concorrene)
-    # prod = @async producer(c, done)
-    # cons = @async consumer(c, done)
+    prod = @async producer(c, done)
+    cons = @async consumer(c, done)
 
     # Utilizando Processos (paralelo ?)
-    prod = @spawn producer(c, done)
-    cons = @spawn consumer(c, done)
+    # prod = @spawn producer(c, done)
+    # cons = @spawn consumer(c, done)
 
     # one iteration of the loop corresponds to one finished task
+    println(prod)
     for i=1:2 take!(done) end
 
     # Encerra os Channels
     close(c)
     close(done)
-
 end
 
-@time runner()
+# @time runner()
+
+a = Channel(3)
+put!(a, 1)
+put!(a, 2)
+put!(a, 3)
+
+for i in a
+    println("aaa $i")
+    sleep(1)
+    if !isready(a) break end
+end
 
 
-
-
-
-
-
-f(x) = 2x
-
-
-f(2)
+println("ashdiusahd")
+# wait()
+# for i in a
+#     println("bbbbb $i")
+# end
+# close(a)

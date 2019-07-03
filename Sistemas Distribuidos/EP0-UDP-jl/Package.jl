@@ -5,20 +5,24 @@ using Serialization
 export encode_and_split,
        decode_msg,
        decode,
-       Datagram
+       Datagram,
+       DataGramVec
 
 include("NetUtils.jl")
 using .NetUtils
 
+const DataGramVec = Array{Array{UInt8}}
+
 mutable struct Datagram
     msg      :: Any
-    msg_id   :: String
-    command  :: String
-    sequence :: Int64
-    total    :: Int64
-    owner    :: String
-    function Datagram(msg="", msg_id="-1", command="", sequence=0, total=0, owner="")
-        new(msg, msg_id, command, sequence, total, owner)
+    msg_id   :: Union{String, Nothing}
+    command  :: Union{String, Nothing}
+    sequence :: Union{Int64,Nothing}
+    total    :: Union{Int64,Nothing}
+    sender_name   :: Union{String, Nothing}
+    sender_port   :: Union{Int64,Nothing}
+    function Datagram(msg="", msg_id="-1", command="", sequence=0, total=0, sender_name="", sender_port=-1)
+        new(msg, msg_id, command, sequence, total, sender_name, sender_port)
     end
 end
 
@@ -37,7 +41,7 @@ function decode(msgs::Vector{UInt8}) :: Any
 end
 
 
-function encode_and_split(msg::Any) :: Array{Array{UInt8}}
+function encode_and_split(msg::Any, net::Interface, command::String) :: Tuple{String,DataGramVec}
     byte_array = encode(msg)
     msg_h = string(hash(msg))
 
@@ -46,21 +50,22 @@ function encode_and_split(msg::Any) :: Array{Array{UInt8}}
     MSG_SIZE = sizeof(byte_array)
     TOTAL_OF_PKGS = ceil(MSG_SIZE / MAX_MSG_SIZE)
 
-    dg_vec::Array{Array{UInt8}} = []
+    dg_vec::DataGramVec = []
 
     i = 1; j = MAX_MSG_SIZE
     seq = 1
     while i < MSG_SIZE
         msg_split = byte_array[i:min(MSG_SIZE, j)]
 
-        dg = Datagram(msg_split, msg_h, "", seq, TOTAL_OF_PKGS, "")
+        dg = Datagram(msg_split, msg_h, command, seq, TOTAL_OF_PKGS, net.name, net.port)
 
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
         # push!(dg_vec, dg)
     end
-    return dg_vec
+    return (msg_h,dg_vec)
 end
+
 
 
 

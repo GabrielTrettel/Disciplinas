@@ -8,10 +8,13 @@ export Net_utils,
 
 
 mutable struct Interface
-    socket::UDPSocket
-    port::Int64
-    host::IPAddr
-    name::String
+    socket::Union{UDPSocket,Nothing}
+    port::Union{Int64,Nothing}
+    host::Union{IPAddr,Nothing}
+    name::Union{String,Nothing}
+    function Interface()
+        new(nothing, nothing, nothing, nothing)
+    end
 end
 
 
