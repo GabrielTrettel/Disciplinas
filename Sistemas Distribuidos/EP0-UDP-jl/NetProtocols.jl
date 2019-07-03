@@ -1,7 +1,6 @@
 module NetProtocols
 
-export test_listen_protocol,
-       test_bd_protocol
+export test_broadcast
 
 include("Network.jl")
 include("NetUtils.jl")
@@ -13,14 +12,16 @@ using .NetUtils
 
 function test_broadcast(type)
     rcv_msg_buffer = Channel{Any}(1024)
-    send_msg_buffer = Channel{Message}(1024)
+    send_msg_buffer = Channel{Any}(1024)
     @async bind_connections(rcv_msg_buffer, send_msg_buffer)
 
     if type == "s"
         test_listen_protocol(rcv_msg_buffer)
     else
         test_bd_protocol(send_msg_buffer)
+    end
 end
+
 
 function test_listen_protocol(channel::Channel)
     while true
@@ -41,7 +42,6 @@ function test_bd_protocol(channel)
             msg_s = Message(msg,port)
             put!(channel, msg_s)
         end
-
     end
 end
 

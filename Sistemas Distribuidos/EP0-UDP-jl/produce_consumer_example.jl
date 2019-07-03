@@ -47,21 +47,25 @@ end
 
 # @time runner()
 
-a = Channel(3)
-put!(a, 1)
-put!(a, 2)
-put!(a, 3)
 
-for i in a
-    println("aaa $i")
-    sleep(1)
-    if !isready(a) break end
+function teste(ch)
+    i = 0
+    task = @async begin
+        println("quero morrer $(take!(ch))")
+    end
+
+    while i < 10
+        i+=1
+        if istaskdone(task) break end
+        println("Tô vivo $i")
+        sleep(2)
+    end
+    println("to morrendo mesmo")
+
 end
 
-
-println("ashdiusahd")
-# wait()
-# for i in a
-#     println("bbbbb $i")
-# end
-# close(a)
+ch = Channel(10)
+@async teste(ch)
+sleep(3)
+put!(ch, 1)
+wait()
