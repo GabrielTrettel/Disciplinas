@@ -34,7 +34,7 @@ end
 function test_listen_protocol(channel::Channel)
     while true
         msg = take!(channel)
-        # msg = msg.value
+
         println("$CVIOLET2 recieved: $msg of type $(typeof(msg))")
     end
 end
@@ -43,9 +43,8 @@ end
 function test_bd_protocol(channel)
     sleep(1)
     while true
-        print("$CBLUE Hit enter to send big msg")
+        print("$CBLUE Hit enter to send big msg: ")
         msg = string(readline())
-        msg = "x -> x+1"
 
         for port in values(Net_utils().ports_owner)
             msg_s = Message(msg,port)
