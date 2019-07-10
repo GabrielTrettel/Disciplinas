@@ -8,28 +8,26 @@ export File,
 
 mutable struct File
     name   :: String        # Name of the file itself
-    owner  :: String        # Name of sender peer
     mtime  :: Float64       # Unix timestamp of when the file was last modified
     ctime  :: Float64       # Unix timestamp of when the file was created
     mode   :: UInt          # The protection mode of the file
     size   :: Int64         # The size (in bytes) of the file
     collect_time :: Float64 # Unix timestamp of when the file was parsed
     rcv_time     :: Float64 # Unix timestamp of when the file was recieved by peer
-    function File(file_name::String, owner::String)
+    function File(file_name::String)
         f_stat = stat(file_name)
         name  = file_name
-        owner = owner
         mtime = f_stat.mtime
         ctime = f_stat.ctime
         mode  = f_stat.mode
         size  = f_stat.size
-        new(name, owner, mtime, ctime, mode, size, time(), -1.0)
+        new(name, mtime, ctime, mode, size, time(), -1.0)
     end
 end
 
 
 
-function parse_dir(dir::String, owner::String="Trettel") :: Vector{File}
+function parse_dir(dir::String) :: Vector{File}
     #=
         Receives a root directory and returns a vector of all the files inside it
         and their metadata. File names resolved as path-to-files in Unix format
@@ -38,7 +36,7 @@ function parse_dir(dir::String, owner::String="Trettel") :: Vector{File}
 
     for (root, dirs, files) in walkdir(dir)
         for file in files
-            push!(files_v, File(joinpath(root, file), owner))
+            push!(files_v, File(joinpath(root, file)))
             # println(joinpath(root, file))
         end
     end
@@ -78,7 +76,6 @@ function merge_files(files1::Vector{File}, files2::Vector{File}) :: Vector{File}
 end
 
 
-
 function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
     #= Removes all old files from files
 
@@ -92,7 +89,7 @@ function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
     =#
 
     f_dt(t1) = (t - t1.rcv_time) <= dt
-    return filter!(f_dt, files)
+    filter!(f_dt, files)
 end
 
 
