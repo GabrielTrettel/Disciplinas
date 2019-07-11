@@ -80,11 +80,23 @@ end
 # sleep(3)
 # put!(ch, 1)
 # wait()
-f(x) = sleep(x)
+# f(x) = sleep(x)
+#
+# fetch()
+#
+# t = @async f(2)
+# println("antes do fetch")
+# fetch(t)
+# println("depois do fetch")
+#
+# wait()
 
-t = @async f(2)
-println("antes do fetch")
-fetch(t)
-println("depois do fetch")
 
-wait()
+#
+# function x(a)
+#     a*2+1
+# end
+#
+# A = [1, 2, 3, 4, 5, 6, 7, 8]
+#
+# B = x.(A)

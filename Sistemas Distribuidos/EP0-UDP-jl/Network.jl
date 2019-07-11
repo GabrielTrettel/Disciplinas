@@ -2,7 +2,8 @@ module Network
 
 export bind_connections,
        Message,
-       MsgRcvd
+       MsgRcvd,
+       get_network_interface
 
 using Sockets
 
@@ -20,9 +21,11 @@ mutable struct Message
 end
 
 
+function bind_connections(rcv_buff::Channel, send_buff::Channel, net=nothing)
 
-function bind_connections(rcv_buff::Channel, send_buff::Channel)
-    net::Interface = get_network_interface()
+    if net == nothing
+        net::Interface = get_network_interface()
+    end
 
     @async begin
         try

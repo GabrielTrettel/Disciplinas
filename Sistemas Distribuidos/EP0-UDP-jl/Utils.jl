@@ -6,6 +6,31 @@ function show_stack_trace()
     end
 end
 
+const LOG_FILE = "/home/trettel/Documents/projects/Disciplinas/Sistemas Distribuidos/testes/peers.log"
+MY_NAME = ""
+
+function get_alive_peers()
+    IO = open(LOG_FILE, "r")
+    n_p = Tuple[]
+    for line in readlines(IO)
+        name,port = split(strip(line, '\n'), '\t')
+        if name == MY_NAME continue end
+
+        port = parse(Int64, port)
+        push!(n_p, (name,port))
+    end
+    close(IO)
+    return n_p
+end
+
+
+function set_sign_of_life(name::String, port::Int64)
+    IO = open(LOG_FILE, "a+")
+    write(IO, "$name\t$port\n")
+    close(IO)
+    global MY_NAME = name
+end
+
 
 
 # macro try_or_print_error(arg)
