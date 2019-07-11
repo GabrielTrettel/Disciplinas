@@ -41,15 +41,18 @@ function print_rcv(peer::PeerFS)
     end
 
     for f in peer.table
+        if length(f.name) < 1 continue; end
+
         str *= "\t - $(f.name)\n"
     end
+
+    str *= "───────────────────────────────────────────────────────\n\n"
     println(str)
 end
 
 function update_own_FS!(dir::String, tables_ch::Channel, owner_name::String, owner_port::Int64)
     while true
         try
-            println("\n$(CGREEN2)Updating own FS:")
             files_vec = parse_dir(dir)
 
             tables = take!(tables_ch)
@@ -84,7 +87,7 @@ function update_others_FS!(tables_ch::Channel, rcv_ch::Channel)
         peer = take!(rcv_ch)
 
         if typeof(peer) != PeerFS
-            println("$CVIOLET =====DEBUG PORPOSE:=====\nWeird msg rcved:\nTypeof rcvd msg $(typeof(peer)) $CEND")
+            println("$(CBEIGE)=====DEBUG PORPOSE:=====\nWeird msg rcved:\nTypeof rcvd msg $(typeof(peer))\n============= $CEND")
             continue
         end
 
@@ -146,13 +149,13 @@ function send_table_x(tables_ch::Channel, send_buff::Channel, name::String, dest
     # println("=========send_table_x TAKE")
 
     if !haskey(tables, name)
-        println("$name has empty FS to send")
+        println("$(CWHITE)$name has empty FS to send")
         put!(tables_ch, tables)
         return
      end
 
     peer = tables[name]
-    println("$CGREEN Sending $(name) files by gossip to peer $(dest_n) in port $dest_p")
+    println("\n$(CWHITE)Sending $(name) files by gossip to peer $(dest_n) in port $dest_p\n")
     put!(send_buff, Message(peer, dest_p))
 
     put!(tables_ch, tables)
@@ -182,15 +185,19 @@ function send_others_table(tables_ch::Channel, send_buff::Channel)
         tables = take!(tables_ch)
         # println("=========send_others_table TAKE")
         names = shuffle(collect(keys(tables)))
-        if length(names) < 1
-            put!(tables_ch, tables)
+        put!(tables_ch, tables)
+
+        if length(names) <= 1
+            # put!(tables_ch, tables)
             sleep(T3)
+            continue
         end
+        println("$(CBEIGE) =============== AVALIABLE PEERS TO SEND: $names")
         src_name = names[end]
 
-        # println("=========send_others_table PUT")
 
         send_table_x(tables_ch, send_buff, src_name, des_port, des_name)
+        # println("=========send_others_table PUT")
 
         sleep(T3)
     end
@@ -224,7 +231,7 @@ function gossip()
 
     @async begin
         try
-            update_own_FS!("../$(net.name)/", tables_ch, net.name, net.port)
+            update_own_FS!("../PEERS/$(net.name)/", tables_ch, net.name, net.port)
         catch y
             show_stack_trace()
         end # try

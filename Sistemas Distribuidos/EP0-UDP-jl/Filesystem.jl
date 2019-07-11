@@ -35,14 +35,17 @@ function parse_dir(dir::String) :: Vector{File}
         and their metadata. File names resolved as path-to-files in Unix format
     =#
     files_v::Vector{File} = []
-    println("\t$(CGREEN)Parsing FS. Files:")
+
+    txt = "$(CVIOLET)Updating own FS:\n\tParsing FS. Files:\n"
+
     for (root, dirs, files) in walkdir(dir)
         for file in files
             fname = joinpath(root, file)
-            println("\t - $fname")
+            txt *= "\t - $fname\n"
             push!(files_v, File(fname))
         end
     end
+    println(txt*"───────────────────────────────────────────────────────\n\n")
     return files_v
 end
 
@@ -60,27 +63,29 @@ function merge_files(files1::Vector{File}, files2::Vector{File}) :: Vector{File}
 
     final_table::Vector{File} = []
 
-    println("$(CGREEN)\tReplacing old files with new ones:")
-    for file in keys(union_files)
+    txt = "\n\n$(CGREEN)Replacing old files with new ones: \n"
 
-        print("\t  - $(file) ")
+    for file in keys(union_files)
         if !haskey(f1_table, file)
             push!(final_table, f2_table[file])
-            print("was included to new table")
+            txt *= "\t$file currently in table\n"
         elseif !haskey(f2_table, file)
             push!(final_table, f1_table[file])
-            print("was included to new table")
+            txt *= "\t$file currently in table\n"
 
         elseif f1_table[file].mtime >= f2_table[file].mtime
             push!(final_table, f1_table[file])
-            print("was replaced by a more recent state")
+            txt *= "\t$file was replaced by a more recent state\n"
+
         else
             push!(final_table, f2_table[file])
-            print("was replaced by a more recent state")
+            txt *= "\t$file was replaced by a more recent state\n"
         end
-        println("")
     end
 
+    txt *= "───────────────────────────────────────────────────────\n\n"
+
+    println(txt)
     return final_table
 end
 
@@ -107,13 +112,21 @@ function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
         dt -> Time difference, in seconds, of File.rcv_time and *t*
     =#
     f_dt(t1) = (t - t1.rcv_time) <= dt
-
+    txt = ""
+    flag = false
     for (i,file) in enumerate(files)
         if !f_dt(file)
-            println("\t$(CRED)Removing file $(file.name) by inactivity")
+            txt *= "\t$(CRED)Removing file $(file.name) by inactivity\n"
+            flag = true
         end
     end
+    if !flag
+        txt *= "\t$(CRED)No files to be removed due to inactivity\n"
+    end
 
+    txt *= "───────────────────────────────────────────────────────\n\n"
+
+    println(txt)
     filter!(f_dt, files)
 end
 
