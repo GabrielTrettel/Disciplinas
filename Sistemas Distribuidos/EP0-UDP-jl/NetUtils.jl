@@ -26,8 +26,8 @@ mutable struct Net_utils
     mtu         :: Int64
 
     function Net_utils()
-        port_queue= [("T1", 4301), ("T2", 4302), ("T3", 4303), ("T4", 4304),
-                  ("T5", 4305), ("T6", 4306), ("T7", 4307), ("T8", 4308)]
+        port_queue= [("PEER1", 4301), ("PEER2", 4302), ("PEER3", 4303), ("PEER4", 4304),
+                  ("PEER5", 4305), ("PEER6", 4306), ("PEER7", 4307), ("PEER8", 4308)]
 
         ports_owner = Dict(port_queue)
         used_ports = similar(port_queue)

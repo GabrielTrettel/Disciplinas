@@ -3,7 +3,9 @@ module FileSystem
 export File,
        parse_dir,
        merge_files,
-       remove_old_files
+       remove_old_files!
+
+include("Styles.jl")
 
 
 mutable struct File
@@ -33,11 +35,12 @@ function parse_dir(dir::String) :: Vector{File}
         and their metadata. File names resolved as path-to-files in Unix format
     =#
     files_v::Vector{File} = []
-
+    println("\t$(CGREEN)Parsing FS. Files:")
     for (root, dirs, files) in walkdir(dir)
         for file in files
-            push!(files_v, File(joinpath(root, file)))
-            # println(joinpath(root, file))
+            fname = joinpath(root, file)
+            println("\t - $fname")
+            push!(files_v, File(fname))
         end
     end
     return files_v
@@ -51,28 +54,44 @@ function merge_files(files1::Vector{File}, files2::Vector{File}) :: Vector{File}
         corresponding names. The elements in the symmetric difference set
         are all included, regardless of mtime.
     =#
-
     f1_table = Dict( f.name => f for f in files1 )
     f2_table = Dict( f.name => f for f in files2 )
     union_files  = merge(f1_table, f2_table)
 
     final_table::Vector{File} = []
 
+    println("$(CGREEN)\tReplacing old files with new ones:")
     for file in keys(union_files)
+
+        print("\t  - $(file) ")
         if !haskey(f1_table, file)
             push!(final_table, f2_table[file])
-
+            print("was included to new table")
         elseif !haskey(f2_table, file)
             push!(final_table, f1_table[file])
+            print("was included to new table")
 
         elseif f1_table[file].mtime >= f2_table[file].mtime
             push!(final_table, f1_table[file])
-
+            print("was replaced by a more recent state")
         else
             push!(final_table, f2_table[file])
+            print("was replaced by a more recent state")
         end
+        println("")
     end
+
     return final_table
+end
+
+
+function show_files_data(files::Vector{File}) :: String
+    str = ""
+    for file in files
+        str *= " - $(file.name)\n"
+    end
+
+    return str
 end
 
 
@@ -87,11 +106,15 @@ function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
         t  -> Unix timestamp of actual time for peer
         dt -> Time difference, in seconds, of File.rcv_time and *t*
     =#
-
     f_dt(t1) = (t - t1.rcv_time) <= dt
+
+    for (i,file) in enumerate(files)
+        if !f_dt(file)
+            println("\t$(CRED)Removing file $(file.name) by inactivity")
+        end
+    end
+
     filter!(f_dt, files)
 end
-
-
 
 end #module

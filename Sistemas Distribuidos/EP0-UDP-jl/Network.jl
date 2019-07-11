@@ -72,8 +72,8 @@ function recv_msg(rcv_buff::Channel{Any}, net::Interface)
 
 function send_msg(send_msg_buffer::Channel{Any}, net::Interface) ::Nothing
     # Send an string to who is listening on 'host' in 'port'
-    socket = UDPSocket()
-    host = ip"127.0.0.1"
+    socket = net.socket
+    host = net.host
 
     while true
         msg = take!(send_msg_buffer)

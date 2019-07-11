@@ -16,6 +16,7 @@ function get_alive_peers()
         name,port = split(strip(line, '\n'), '\t')
         if name == MY_NAME continue end
 
+        name = string(name)
         port = parse(Int64, port)
         push!(n_p, (name,port))
     end
