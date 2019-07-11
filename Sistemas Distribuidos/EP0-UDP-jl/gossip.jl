@@ -56,9 +56,6 @@ function update_own_FS!(dir::String, tables_ch::Channel, owner_name::String, own
             files_vec = parse_dir(dir)
 
             tables = take!(tables_ch)
-            # println("========= update_own_FS TAKE")
-
-
             if !haskey(tables, owner_name)
                 tables[owner_name] = PeerFS(owner_name, owner_port, files_vec)
             else
@@ -66,7 +63,6 @@ function update_own_FS!(dir::String, tables_ch::Channel, owner_name::String, own
             end
 
             put!(tables_ch, tables)
-            # println("========= update_own_FS TAKE")
 
             sleep(T1)
         catch
@@ -79,6 +75,7 @@ end # function update_own_FS
 
 """
     update_others_FS!(tables_channel, peer)
+    
 Updates local table by other peer's informations.
 Just updates files with a more recent mtime time.
 """
@@ -97,7 +94,6 @@ function update_others_FS!(tables_ch::Channel, rcv_ch::Channel)
         end
 
         tables = take!(tables_ch)
-        # println("========= update_others_FS TAKE")
         print_rcv(peer)
 
         if !haskey(tables, peer.name)
@@ -107,8 +103,6 @@ function update_others_FS!(tables_ch::Channel, rcv_ch::Channel)
         end
 
         put!(tables_ch, tables)
-        # println("========= update_others_FS PUT")
-
     end
 end # function update_others_FS
 
@@ -122,7 +116,6 @@ Removes all old files from all tables received from others peers
 function update_old_files!(tables_ch::Channel)
     while true
         tables = take!(tables_ch)
-        # println("=========update_old_files TAKE")
 
         t = time()
         for (name,peer) in tables
@@ -131,8 +124,6 @@ function update_old_files!(tables_ch::Channel)
         end
 
         put!(tables_ch, tables)
-        # println("=========update_old_files PUT")
-
         sleep(T4)
     end
 
@@ -146,8 +137,6 @@ Send information of peer `name` to peer in port `destination`
 """
 function send_table_x(tables_ch::Channel, send_buff::Channel, name::String, dest_p::Int64, dest_n::String)
     tables = take!(tables_ch)
-    # println("=========send_table_x TAKE")
-
     if !haskey(tables, name)
         println("$(CWHITE)$name has empty FS to send")
         put!(tables_ch, tables)
@@ -159,8 +148,6 @@ function send_table_x(tables_ch::Channel, send_buff::Channel, name::String, dest
     put!(send_buff, Message(peer, dest_p))
 
     put!(tables_ch, tables)
-    # println("=========send_table_x PUT")
-
 end # function
 
 
@@ -175,6 +162,13 @@ function send_my_table(tables_ch::Channel, send_buff::Channel, name::String)
     end
 end
 
+
+
+"""
+    send_others_table(tables_ch, send_buff)
+
+At each T3 time, send and peer table to another.
+"""
 function send_others_table(tables_ch::Channel, send_buff::Channel)
     while true
         peers = get_alive_peers()
@@ -183,12 +177,10 @@ function send_others_table(tables_ch::Channel, send_buff::Channel)
         des_name,des_port = peers[end]
 
         tables = take!(tables_ch)
-        # println("=========send_others_table TAKE")
         names = shuffle(collect(keys(tables)))
         put!(tables_ch, tables)
 
         if length(names) <= 1
-            # put!(tables_ch, tables)
             sleep(T3)
             continue
         end
@@ -197,8 +189,6 @@ function send_others_table(tables_ch::Channel, send_buff::Channel)
 
 
         send_table_x(tables_ch, send_buff, src_name, des_port, des_name)
-        # println("=========send_others_table PUT")
-
         sleep(T3)
     end
 end
