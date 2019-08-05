@@ -3,7 +3,8 @@ module Network
 export bind_connections,
        Message,
        MsgRcvd,
-       get_network_interface
+       get_network_interface,
+       get_flooding_interface
 
 using Sockets
 
@@ -96,11 +97,41 @@ function get_network_interface() :: Interface
         name,port = a
         if bind(socket, host, port)
             println("$CGREEN Port $port in use by $name $CEND")
-            break
+            return Interface(socket, port, host, name)
         end
     end
-
-    return Interface(socket, port, host, name)
+    error("$CRED2 Could not bind socket port $CEND")
 end
+
+
+
+"""
+    get_flooding_interface(name)
+    Args
+    ----
+    name: Just a nickname of the current peer
+
+    Returns
+    -------
+    Interface struct containing some information about sending information
+    through sockets
+
+    Used to set an exclusive socket for receiving data from flooding.
+    Reason:
+"""
+
+function get_flooding_interface(name::String) :: Interface
+    host = Net_utils().host
+
+    try
+        port, server = listenany(host, 7878)
+        name = "$name FL-RQST"
+        println("$CGREEN Port $port in use for recieving data from flooding $CEND")
+        return Interface(server, port, host, name)
+    catch y
+        error("$CRED2 Could not bind server-socket port for flooding requests $CEND")
+    end
+end
+
 
 end # module

@@ -8,7 +8,7 @@ export Net_utils,
 
 
 mutable struct Interface
-    socket::Union{UDPSocket,Nothing}
+    socket::Union{UDPSocket,TCPSocket,Sockets.TCPServer,Nothing}
     port::Union{Int64,Nothing}
     host::Union{IPAddr,Nothing}
     name::Union{String,Nothing}
