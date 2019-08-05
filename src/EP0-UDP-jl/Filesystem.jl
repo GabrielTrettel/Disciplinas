@@ -1,12 +1,14 @@
 module FileSystem
 
 export File,
+       Movie,
        parse_dir,
        merge_files,
        remove_old_files!
 
-include("Styles.jl")
 
+include("Styles.jl")
+using VideoIO
 
 mutable struct File
     name   :: String        # Name of the file itself
@@ -24,6 +26,23 @@ mutable struct File
         mode  = f_stat.mode
         size  = f_stat.size
         new(name, mtime, ctime, mode, size, time(), -1.0)
+    end
+end
+
+
+mutable struct Movie
+    name     :: String
+    content  :: Array{UInt8}
+    size     :: Real      # MBytes
+    duration :: Real      # minutes
+
+    function Movie(file_with_path::String)
+        c = read(file_with_path)
+        file_name = split(file_with_path, "/")[end]
+        size = stat(file_with_path).size / 1024.0
+        duration = VideoIO.get_duration(file_with_path) / 60.0
+
+        new(file_name, c, size, duration)
     end
 end
 
