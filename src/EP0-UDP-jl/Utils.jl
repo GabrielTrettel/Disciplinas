@@ -32,6 +32,11 @@ function set_sign_of_life(name::String, port::Int64)
     global MY_NAME = name
 end
 
+function Input(prompt)
+    print(prompt)
+    readline()
+end
+
 
 
 # macro try_or_print_error(arg)

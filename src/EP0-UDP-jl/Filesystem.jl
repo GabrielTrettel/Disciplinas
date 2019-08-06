@@ -36,7 +36,7 @@ mutable struct Movie
     size     :: Real      # MBytes
     duration :: Real      # minutes
 
-    function Movie(file_with_path::String)
+    function Movie(file_with_path::String, id)
         c = read(file_with_path)
         file_name = split(file_with_path, "/")[end]
         size = stat(file_with_path).size / 1024.0

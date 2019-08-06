@@ -75,7 +75,7 @@ end # function update_own_FS
 
 """
     update_others_FS!(tables_channel, peer)
-    
+
 Updates local table by other peer's informations.
 Just updates files with a more recent mtime time.
 """

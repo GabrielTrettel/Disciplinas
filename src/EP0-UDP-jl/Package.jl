@@ -13,11 +13,9 @@ using .NetUtils
 mutable struct Datagram
     msg      :: Any
     msg_id   :: String
-    command  :: String
     sequence :: Int64
     total    :: Int64
-    owner    :: String
-    function Datagram(msg="", msg_id="-1", command="", sequence=0, total=0, owner="")
+    function Datagram(msg="", msg_id="-1", sequence=0, total=0)
         new(msg, msg_id, command, sequence, total, owner)
     end
 end
@@ -53,7 +51,7 @@ function encode_and_split(msg::Any) :: Array{Array{UInt8}}
     while i < MSG_SIZE
         msg_split = byte_array[i:min(MSG_SIZE, j)]
 
-        dg = Datagram(msg_split, msg_h, "", seq, TOTAL_OF_PKGS, "")
+        dg = Datagram(msg_split, msg_h, seq, TOTAL_OF_PKGS)
 
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
@@ -78,8 +76,3 @@ function decode_msg(dgrams) :: Any
 end
 
 end # module
-
-# TEST SECTION
-# splitted = encode_and_split("a"^10024)
-# sizeof(splitted[1])
-# msg = decode_msg(splitted)

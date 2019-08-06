@@ -2,7 +2,6 @@ module Network
 
 export bind_connections,
        Message,
-       MsgRcvd,
        get_network_interface,
        get_flooding_interface
 
@@ -82,6 +81,7 @@ function recv_msg(rcv_buff::Channel{Any}, net::Interface)
 
         if isempty(filter(x -> "-1" == x.msg_id, datagrams_map[msg_id]))
             msg = decode_msg(pop!(datagrams_map, msg_id))
+
             put!(rcv_buff, msg)
         end
     end
@@ -148,7 +148,6 @@ function get_flooding_interface(name::String) :: Interface
         end
     end
     error("$CRED2 Could not bind server-socket port for flooding requests $CEND")
-
 end
 
 
