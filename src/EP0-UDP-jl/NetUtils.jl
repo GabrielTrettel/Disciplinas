@@ -3,12 +3,11 @@ module NetUtils
 using Sockets
 
 export Net_utils,
-       Input,
        Interface
 
 
 mutable struct Interface
-    socket::Union{UDPSocket,TCPSocket,Sockets.TCPServer,Nothing}
+    socket::Union{UDPSocket,Nothing}
     port::Union{Int64,Nothing}
     host::Union{IPAddr,Nothing}
     name::Union{String,Nothing}
@@ -44,9 +43,5 @@ mutable struct Net_utils
 end
 
 
-function Input(prompt)
-    print(prompt)
-    readline()
-end
 
 end # module

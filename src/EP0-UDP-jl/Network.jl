@@ -22,8 +22,14 @@ mutable struct Message
 end
 
 
-function bind_connections(rcv_buff::Channel, send_buff::Channel, net=nothing)
+bind_connections(rcv_buff::Channel, send_buff::Channel, net::Union{Interface,Nothing}=nothing) =
+                bind_default_connections(rcv_buff, send_buff, net)
 
+bind_connections(rcv_buff::Channel, net::Union{Interface,Nothing}=nothing) =
+                bind_flood_connections(rcv_buff, net)
+
+
+function bind_default_connections(rcv_buff::Channel, send_buff::Channel, net)
     if net == nothing
         net::Interface = get_network_interface()
     end
@@ -36,6 +42,7 @@ function bind_connections(rcv_buff::Channel, send_buff::Channel, net=nothing)
         end
     end
 
+    if send_buff == nothing return end
     @async begin
         try
             send_msg(send_buff, net)
@@ -47,27 +54,38 @@ function bind_connections(rcv_buff::Channel, send_buff::Channel, net=nothing)
 end
 
 
-function recv_msg(rcv_buff::Channel{Any}, net::Interface)
-        datagrams_map = Dict{String, Array{Datagram}}()
-
-        while true
-            addr,package = recvfrom(net.socket)
-            dg::Datagram = decode(package)
-
-            msg_id = dg.msg_id
-            if haskey(datagrams_map, msg_id) == false
-                datagrams_map[msg_id] = [Datagram() for _ in 1:dg.total]
-            end
-
-            msg_seq = dg.sequence
-            datagrams_map[msg_id][msg_seq] = dg
-
-            if isempty(filter(x -> "-1" == x.msg_id, datagrams_map[msg_id]))
-                msg = decode_msg(pop!(datagrams_map, msg_id))
-                put!(rcv_buff, msg)
-            end
+function bind_flood_connections(rcv_buff::Channel, net)
+    @async begin
+        try
+            recv_msg(rcv_buff, net)
+        catch
+            show_stack_trace()
         end
     end
+end
+
+
+function recv_msg(rcv_buff::Channel{Any}, net::Interface)
+    datagrams_map = Dict{String, Array{Datagram}}()
+
+    while true
+        addr,package = recvfrom(net.socket)
+        dg::Datagram = decode(package)
+
+        msg_id = dg.msg_id
+        if haskey(datagrams_map, msg_id) == false
+            datagrams_map[msg_id] = [Datagram() for _ in 1:dg.total]
+        end
+
+        msg_seq = dg.sequence
+        datagrams_map[msg_id][msg_seq] = dg
+
+        if isempty(filter(x -> "-1" == x.msg_id, datagrams_map[msg_id]))
+            msg = decode_msg(pop!(datagrams_map, msg_id))
+            put!(rcv_buff, msg)
+        end
+    end
+end
 
 
 
@@ -117,21 +135,22 @@ end
     through sockets
 
     Used to set an exclusive socket for receiving data from flooding.
-    Reason:
 """
-
 function get_flooding_interface(name::String) :: Interface
+    socket = UDPSocket()
     host = Net_utils().host
 
-    try
-        port, server = listenany(host, 7878)
-        name = "$name FL-RQST"
-        println("$CGREEN Port $port in use for recieving data from flooding $CEND")
-        return Interface(server, port, host, name)
-    catch y
-        error("$CRED2 Could not bind server-socket port for flooding requests $CEND")
+    for port in 6666:7777
+        if bind(socket, host, port)
+            name = "$name@$host@$port"
+            println("$CGREEN Port $port in use for recieving data from flooding $CEND")
+            return Interface(socket, port, host, name)
+        end
     end
+    error("$CRED2 Could not bind server-socket port for flooding requests $CEND")
+
 end
+
 
 
 end # module
