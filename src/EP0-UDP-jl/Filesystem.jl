@@ -10,6 +10,8 @@ export File,
 
 include("Styles.jl")
 using VideoIO
+using StringDistances
+
 
 mutable struct File
     name   :: String        # Name of the file itself
@@ -37,7 +39,7 @@ mutable struct Movie
     size     :: Real      # MBytes
     duration :: Real      # minutes
 
-    function Movie(file_with_path::String, id)
+    function Movie(file_with_path::String)
         c = read(file_with_path)
         file_name = split(file_with_path, "/")[end]
         size = stat(file_with_path).size / 1024.0
@@ -165,6 +167,27 @@ function p_movie(file::Movie, path::String)
         throw("Invalid path to save $file")
     end
 end
+
+n(x) = split(x, "/")[end]
+cc(t1,t2) = compare(Levenshtein(), n(t1), n(t2)) >= 0.90
+
+function get_name(request,my_path)
+    file = request.name
+    files = []
+    for (root, dirs, files) in walkdir(my_path)
+        for file in files
+            push!(files, joinpath(root, file))
+        end
+    end
+
+    filter!(x-> cc(x,file) , files)
+
+    if isempty(files)
+        return false
+    else
+        return files[1]
+end
+
 
 
 end #module

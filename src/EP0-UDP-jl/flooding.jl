@@ -137,8 +137,10 @@ end
 Flood msg to all kwnow peers
 """
 function flood_msg(msg::FloodingMSG, s_buff::Channel)
-    peers = get_alive_peers()
+    if msg.TTL < 0 return end
 
+
+    peers = get_alive_peers()
     while length(peers) < 1 sleep(2)
         peers = get_alive_peers()
     end  # Wait until some kwown peer is online
@@ -181,6 +183,8 @@ function force_exit(ch::Channel)
     put!(ch, true)
 end
 
+
+
 """
     flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
 
@@ -191,14 +195,33 @@ function flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
 
     while true
         request::FloodingMSG = take!(rcv_msg_buffer)
+        r_id = "$(request.sender_name)-$(request.query_id)"
 
-        if !haskey(received_requests, request)
-            i_have_file(request) ? reply_to_sender(request,send_msg_buffer) : flood_request(request,send_msg_buffer)
+        if !haskey(received_requests, r_id)
+            request.TTL -= 1
+            file = get_file(request, my_path)
+            file != false ? reply_to_sender(request, send_msg_buffer, my_path, file) : flood_msg(request,send_msg_buffer)
+            push!(received_requests, r_id)
         else
             # REQUEST ALREADY PROCESSED, IGNORING
             continue
         end
-
+    end
 end
+
+
+"""
+    reply_to_sender(request::FloodingMSG, s_buff::Channel)
+
+Reply the asked file to sender
+"""
+function reply_to_sender(request::FloodingMSG, s_buff::Channel, my_path::String, file::String)
+    full_path = path * (path[end] == "/" ? "" : "/") * file
+    
+    movie = Movie(my_path*file)
+
+    put!(s_buff, Message(movie, movie.sender_port))
+end
+
 
 end
