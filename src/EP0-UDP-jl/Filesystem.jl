@@ -4,7 +4,8 @@ export File,
        Movie,
        parse_dir,
        merge_files,
-       remove_old_files!
+       remove_old_files!,
+       persist
 
 
 include("Styles.jl")
@@ -148,5 +149,22 @@ function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
     println(txt)
     filter!(f_dt, files)
 end
+
+"""
+    persist(file::Movie, path:String)
+
+Persist some file in <path> user filesystem
+"""
+persist(file::Movie, path::String) = p_movie(file, path)
+
+function p_movie(file::Movie, path::String)
+    if ispath(path)
+        io = open(file)
+        write(io, file.content)
+    else
+        throw("Invalid path to save $file")
+    end
+end
+
 
 end #module

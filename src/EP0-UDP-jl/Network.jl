@@ -41,7 +41,7 @@ function bind_default_connections(rcv_buff::Channel, send_buff::Channel, net)
         end
     end
 
-    if send_buff == nothing return end
+
     @async begin
         try
             send_msg(send_buff, net)
