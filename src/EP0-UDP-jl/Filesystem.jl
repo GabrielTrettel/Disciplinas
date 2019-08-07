@@ -164,9 +164,11 @@ function p_movie(file::Movie, path::String)
         io = open(file)
         write(io, file.content)
     else
-        throw("Invalid path to save $file")
+        throw("Invalid path \"$path\" to save \"$file\"")
     end
 end
+
+
 
 n(x) = split(x, "/")[end]
 cc(t1,t2) = compare(Levenshtein(), n(t1), n(t2)) >= 0.90

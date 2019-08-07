@@ -1,3 +1,4 @@
+using Random
 
 function show_stack_trace()
     for (exc, bt) in Base.catch_stack()
@@ -21,8 +22,15 @@ function get_alive_peers()
         push!(n_p, (name,port))
     end
     close(IO)
+
+                                  # |  This limits the total amount of known peers
+    l = max(1,length(n_p) ÷ 3)    # |  to only one third of the total. So decided
+    shuffle!(n_p)                 # |  for didactic reasons, seeking to increase
+    n_p = n_p[1 : l]              # |  the amount of search among peers.
+
     return n_p
 end
+
 
 
 function set_sign_of_life(name::String, port::Int64)
@@ -38,7 +46,7 @@ function Input(prompt)
 end
 
 
-
+# Someday I will try to make this work
 # macro try_or_print_error(arg)
 #     try
 #         result = eval(arg)

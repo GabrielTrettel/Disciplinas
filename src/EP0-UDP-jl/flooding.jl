@@ -13,22 +13,28 @@ using .FileSystem
 
 using Sockets
 
-
+mode = ""
 const TTL = 3 # Time to live of message
 
-function flooding()
+# "Doing a macgyver" to only printing the correct informations,
+# based on what mode this peer are.
+Base.println(m::String, x::String) = if m == mode println(x) end
+
+function flooding(modes::String="client")
+    global mode = modes
     rcv_msg_buffer = Channel{Any}(1024)   # | Those are used for sending/receiving
     send_msg_buffer = Channel{Any}(1024)  # | messages by flooding protocol, not the file itself.
 
     net          = get_network_interface()           # |
     flooding_net = get_flooding_interface(net.name)  # | Both are NetUtils.Interface
 
-    flooding_rcv_buffer = Channel{Any}(1024)
-    process_flood_controller = Channel{Any}(1)
+    flooding_rcv_buffer = Channel{Any}(1024)  # This is used to receive the movie.
+    to_process_controller  = Channel{Any}(100)
+
 
     set_sign_of_life(net.name, net.port)
     my_name = net.name
-    my_path = "../PEERS/$(net.name)/"
+    my_path = "../../peers/$(net.name)/"
 
     # Binds buffers exclusively for peer-to-peer "conversation" in flooding protocol
     @async begin
@@ -48,10 +54,10 @@ function flooding()
         end # try
     end # async
 
-    # Runs query dealer for searching data in distributed system
+
     @async begin
         try
-            search_files_in_ds(send_msg_buffer, flooding_rcv_buffer, process_flood_controller, net, flooding_net)
+            flood_replies_processor(flooding_rcv_buffer, to_process_controller, my_path)
         catch y
             show_stack_trace()
         end # try
@@ -66,6 +72,20 @@ function flooding()
             show_stack_trace()
         end # try
     end # async
+
+
+    # If in server mode, there is no need for interfacing with user, so return
+    if mode == "s" return end
+
+    # Runs query dealer for searching data in distributed system
+    @async begin
+        try
+            search_files_in_ds(send_msg_buffer, flooding_rcv_buffer, to_process_controller, net, flooding_net)
+        catch y
+            show_stack_trace()
+        end # try
+    end # async
+
 
 
 end
@@ -93,28 +113,19 @@ Interface for searching files in distributed system
 """
 function search_files_in_ds(send_msg_buffer::Channel,
                             flooding_rcv_buffer::Channel,
-                            net::Interface, flooding_net::Interface)
+                            to_process_controller::Channel,
+                            net::Interface,
+                            flooding_net::Interface)
 
     my_ip   = flooding_net.port
     my_port = flooding_net.host
     my_name = flooding_net.name
     id = 0
 
-    to_process_controller  = Channel()
-    already_fetched_controller = Channel()
-    @async begin
-        try
-            flood_replies_processor(flooding_rcv_buffer, to_process_controller)
-        catch y
-            show_stack_trace()
-        end # try
-    end # async
-
-
     while true
         search_for = get_qry_from_user()
         fl_msg = FloodingMSG(search_for, id, my_ip, my_port, my_name, TTL)
-
+        prinln("c", "Searching for $search_for file in DS...")
         put!(to_process_controller, id)
         id+=1
 
@@ -124,33 +135,11 @@ end
 
 
 """
-    flood_msg(args)
+    flood_replies_processor(flooding_rcv_buffer, to_process_controller)
 
-Flood msg to all kwnow peers
+Processes all replies from flooded messages, and persist just the first one (per query), ignoring others
 """
-function flood_msg(msg::FloodingMSG, s_buff::Channel)
-    if msg.TTL < 0 return end
-
-
-    peers = get_alive_peers()
-    while length(peers) < 1 sleep(2)
-        peers = get_alive_peers()
-    end  # Wait until some kwown peer is online
-
-    # === HERE WE FLOOD MSG TO ALL KNOWN PEERS ===
-    for (peer_name, peer_port) in peers
-        put!(s_buff, Message(fl_msg, peer_port))
-    end
-    # === HERE WE FLOOD MSG TO ALL KNOWN PEERS ===
-end
-
-
-"""
-    flood_replies_processor(flooding_rcv_buffer, process_flood_controller)
-
-Processes all replies from flooded messages, and persist just the first one, ignoring others
-"""
-function flood_replies_processor(flooding_rcv_buffer::Channel, process_flood_controller::Channel)
+function flood_replies_processor(flooding_rcv_buffer::Channel, to_process_controller::Channel, path::String)
     queries_request = Set()
     movies = []
 
@@ -158,8 +147,8 @@ function flood_replies_processor(flooding_rcv_buffer::Channel, process_flood_con
         sleep(0.5)
         request_id = 0
         # Blocks while user does not make a query
-        if isready(process_flood_controller)
-            request_id = take!(process_flood_controller)
+        if isready(to_process_controller)
+            request_id = take!(to_process_controller)
             push!(queries_request, request_id) # Now, I'm expecting for this ID to arrive.
         end
 
@@ -169,18 +158,46 @@ function flood_replies_processor(flooding_rcv_buffer::Channel, process_flood_con
             flag = true
             push!(movies,take!(flooding_rcv_buffer))
         end
-        if flag map(x->decide_if_save!(x,queries_request), movies) end
-
+        if flag map(x->decide_if_save!(x,queries_request, path), movies) end
     end
 end
 
-function decide_if_save!(movie::Movie, queries_request)
+function decide_if_save!(movie::Movie, queries_request, path)
     if movie.query_id in queries_request
-        persist(movie)
+        println("c", "$CGREEN $(movie.name) found. Already downloaded")
+
+        persist(movie, path)
         pop!(queries_request, movie.query_id)
     end
 end
 
+
+
+"""
+    flood_msg(args)
+
+Flood msg to all kwnow peers
+"""
+function flood_msg(msg::FloodingMSG, s_buff::Channel)
+    if msg.TTL < 0
+        println("s", "Request \"$(msg.query)\"\n from   $(msg.sender_name)\nDying here because TTL == 0")
+        return
+    end
+
+    peers = get_alive_peers()
+    while length(peers) < 1 sleep(2)
+        peers = get_alive_peers()
+    end  # Wait until some kwown peer is online
+
+    # === HERE WE FLOOD MSG TO ALL KNOWN PEERS ===
+    for (peer_name, peer_port) in peers
+        if peer_name == msg.sender_name continue end
+        print("s", "$peer_name, ")
+        put!(s_buff, Message(msg, peer_port))
+    end
+    println("s", "\n\n")
+    # === HERE WE FLOOD MSG TO ALL KNOWN PEERS ===
+end
 
 
 """
@@ -197,8 +214,16 @@ function flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
 
         if !haskey(received_requests, r_id)
             request.TTL -= 1
+            println("s", "$CYELLOW $(request.sender_name) is asking for $(request.query): ")
             file = get_file(request, my_path)
-            file != false ? reply_to_sender(request, send_msg_buffer, my_path, file) : flood_msg(request,send_msg_buffer)
+
+            if file != false
+                reply_to_sender(request, send_msg_buffer, my_path, file)
+            else
+                println("s", "$CYELLOW I don't have it, flooding to others...")
+                flood_msg(request,send_msg_buffer)
+            end
+
             push!(received_requests, r_id)
         else
             # REQUEST ALREADY PROCESSED, IGNORING
@@ -217,9 +242,9 @@ function reply_to_sender(request::FloodingMSG, s_buff::Channel, my_path::String,
     full_path = path * (path[end] == "/" ? "" : "/") * file
 
     movie = Movie(my_path*file)
-
+    println("s", "$CYELLOW\t I have $(file), SENDING TO HIM...\n")
     put!(s_buff, Message(movie, movie.sender_port))
 end
 
 
-end
+end # module

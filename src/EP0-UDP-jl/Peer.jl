@@ -1,13 +1,20 @@
 module Peer
 
 include("NetProtocols.jl")
-include("gossip.jl")
 using .NetProtocols
-using .Gossip
+# include("gossip.jl")
+# using .Gossip
+include("flooding.jl")
+using .Flooding
 
 function main()
+    if length(ARGS) >= 1
+        flooding(ARGS[1])
+    end
+    flooding()
+
     # test_broadcast(ARGS[end])
-    gossip()
+    # gossip()
 end
 main()
 
