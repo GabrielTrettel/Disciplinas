@@ -26,7 +26,8 @@ mutable struct Net_utils
 
     function Net_utils()
         port_queue= [("PEER1", 4301), ("PEER2", 4302), ("PEER3", 4303), ("PEER4", 4304),
-                  ("PEER5", 4305), ("PEER6", 4306), ("PEER7", 4307), ("PEER8", 4308)]
+                  ("PEER5", 4305), ("PEER6", 4306), ("PEER7", 4307), ("PEER8", 4308),
+                  ("PEER9", 4309), ("PEER10", 4310), ("PEER11", 4311), ("PEER12", 4312)]
 
         ports_owner = Dict(port_queue)
         used_ports = similar(port_queue)
@@ -36,7 +37,7 @@ mutable struct Net_utils
             indicating how long a msg can be. In my computer, 65508 is the limit.
             - 1024 by convention
         =#
-        mtu = 1024
+        mtu = 30508
 
         new(port_queue, ports_owner, used_ports, host, mtu)
     end

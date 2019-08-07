@@ -5,12 +5,13 @@ export File,
        parse_dir,
        merge_files,
        remove_old_files!,
-       persist
+       persist,
+       get_file
 
 
 include("Styles.jl")
 using VideoIO
-using StringDistances
+# using StringDistances
 
 
 mutable struct File
@@ -38,7 +39,6 @@ mutable struct Movie
     content  :: Array{UInt8}
     size     :: Real      # MBytes
     duration :: Real      # minutes
-
     function Movie(file_with_path::String)
         c = read(file_with_path)
         file_name = split(file_with_path, "/")[end]
@@ -160,10 +160,9 @@ Persist some file in <path> user filesystem
 persist(file::Movie, path::String) = p_movie(file, path)
 
 function p_movie(file::Movie, path::String)
-    if ispath(path)
-        io = open(file)
-        write(io, file.content)
-    else
+    try
+        write(path*file.name, file.content)
+    catch
         throw("Invalid path \"$path\" to save \"$file\"")
     end
 end
@@ -171,24 +170,16 @@ end
 
 
 n(x) = split(x, "/")[end]
-cc(t1,t2) = compare(Levenshtein(), n(t1), n(t2)) >= 0.90
+# cc(t1,t2) = compare(Levenshtein(), n(t1), n(t2)) >= 0.90
 
-function get_name(request,my_path)
-    file = request.name
-    files = []
+function get_file(request::String, my_path::String)
     for (root, dirs, files) in walkdir(my_path)
         for file in files
-            push!(files, joinpath(root, file))
+            n(file) == n(request) ? (return joinpath(root, file)) : continue
         end
     end
+    return false
 
-    filter!(x-> cc(x,file) , files)
-
-    if isempty(files)
-        return false
-    else
-        return files[1]
-    end
 end
 
 

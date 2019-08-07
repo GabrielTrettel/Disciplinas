@@ -10,8 +10,11 @@ using .Flooding
 function main()
     if length(ARGS) >= 1
         flooding(ARGS[1])
+    else
+        throw("Missing arg mode\n'c' for client, 's' for server")
     end
-    flooding()
+
+    wait()
 
     # test_broadcast(ARGS[end])
     # gossip()

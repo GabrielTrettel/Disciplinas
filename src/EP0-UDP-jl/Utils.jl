@@ -4,6 +4,7 @@ function show_stack_trace()
     for (exc, bt) in Base.catch_stack()
         showerror(stdout, exc, bt)
         println()
+        throw("")
     end
 end
 

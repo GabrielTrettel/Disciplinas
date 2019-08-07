@@ -16,7 +16,7 @@ mutable struct Datagram
     sequence :: Int64
     total    :: Int64
     function Datagram(msg="", msg_id="-1", sequence=0, total=0)
-        new(msg, msg_id, command, sequence, total, owner)
+        new(msg, msg_id, sequence, total)
     end
 end
 
@@ -76,3 +76,7 @@ function decode_msg(dgrams) :: Any
 end
 
 end # module
+
+# using .Package
+
+# @show sizeof(encode_and_split(read("/home/trettel/Documents/projects/DistributedSystems/peers/movie/Groundhog_Day.mp4")))

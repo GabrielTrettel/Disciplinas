@@ -1,18 +1,22 @@
 module Network
 
+
+include("NetUtils.jl")
+using .NetUtils
+
 export bind_connections,
        Message,
        get_network_interface,
        get_flooding_interface
+       # NetUtils
 
 using Sockets
+using ProgressMeter
 
 include("Styles.jl")
 include("Package.jl")
-include("NetUtils.jl")
 include("Utils.jl")
 using .Package
-using .NetUtils
 
 
 mutable struct Message
@@ -29,10 +33,6 @@ bind_connections(rcv_buff::Channel, net::Union{Interface,Nothing}=nothing) =
 
 
 function bind_default_connections(rcv_buff::Channel, send_buff::Channel, net)
-    if net == nothing
-        net::Interface = get_network_interface()
-    end
-
     @async begin
         try
             recv_msg(rcv_buff, net)
@@ -98,9 +98,23 @@ function send_msg(send_msg_buffer::Channel{Any}, net::Interface) ::Nothing
         msg = take!(send_msg_buffer)
 
         data_grams = encode_and_split(msg.value)
-        for dg in data_grams
-            send(socket, host, msg.destination_port, dg)
+        total = length(data_grams)
+
+        if total > 100
+            println("Sending BIG msg, $(length(data_grams)) datagrams to send")
+            p = Progress(total, barlen=20)
+
+            for dg in data_grams
+                next!(p)
+                sleep(0.1)
+                send(socket, host, msg.destination_port, dg)
+            end
+
+        else
+            broadcast(x->send(socket, host, msg.destination_port, x), data_grams)
         end
+
+
     end
 end
 
@@ -115,7 +129,7 @@ function get_network_interface() :: Interface
         name,port = a
         if bind(socket, host, port)
             println("$CGREEN Port $port in use by $name $CEND")
-            return Interface(socket, port, host, name)
+            return NetUtils.Interface(socket, port, host, name)
         end
     end
     error("$CRED2 Could not bind socket port $CEND")
@@ -153,3 +167,10 @@ end
 
 
 end # module
+
+
+f(x,t) = 2x+t
+
+a = [1,2,3,4,5]
+
+f.(10,a)
