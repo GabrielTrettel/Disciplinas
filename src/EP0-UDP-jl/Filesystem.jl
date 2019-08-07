@@ -186,6 +186,7 @@ function get_name(request,my_path)
         return false
     else
         return files[1]
+    end
 end
 
 

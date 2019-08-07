@@ -6,7 +6,7 @@ function show_stack_trace()
     end
 end
 
-const LOG_FILE = "/home/trettel/Documents/projects/Disciplinas/Sistemas Distribuidos/PEERS/peers.log"
+const LOG_FILE = "/home/trettel/Documents/projects/DistributedSystems/peers/peers.log"
 MY_NAME = ""
 
 function get_alive_peers()

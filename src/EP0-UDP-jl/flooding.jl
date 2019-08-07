@@ -104,7 +104,7 @@ function search_files_in_ds(send_msg_buffer::Channel,
     already_fetched_controller = Channel()
     @async begin
         try
-            flood_replies_processor(flooding_rcv_buffer, to_process_controller, already_fetched_controller)
+            flood_replies_processor(flooding_rcv_buffer, to_process_controller)
         catch y
             show_stack_trace()
         end # try
@@ -119,14 +119,6 @@ function search_files_in_ds(send_msg_buffer::Channel,
         id+=1
 
         flood_msg(fl_msg, send_msg_buffer)
-
-        t = @async force_exit(already_fetched_controller)
-        # Blocks while not receiving query result, or user forces exit
-        take!(already_fetched_controller)
-
-        if !istaskdone(t)
-            Base.throwto(t, InterruptException())
-        end
     end
 end
 
@@ -158,29 +150,35 @@ end
 
 Processes all replies from flooded messages, and persist just the first one, ignoring others
 """
-function flood_replies_processor(flooding_rcv_buffer::Channel, process_flood_controller::Channel, already_fetched_controller)
+function flood_replies_processor(flooding_rcv_buffer::Channel, process_flood_controller::Channel)
+    queries_request = Set()
+    movies = []
 
     while true
+        sleep(0.5)
+        request_id = 0
         # Blocks while user does not make a query
-        request_id = take!(process_flood_controller)
-        if request_id == true continue end
+        if isready(process_flood_controller)
+            request_id = take!(process_flood_controller)
+            push!(queries_request, request_id) # Now, I'm expecting for this ID to arrive.
+        end
 
         # Blocks while not receiving query result
-        movie = take!(flooding_rcv_buffer)
-        if moovie.query_id == request_id
-            persist(movie)
-            put!(already_fetched_controller, true)
-        else
-            put!(process_flood_controller, request_id)
+        flag = false
+        while isready(flooding_rcv_buffer)
+            flag = true
+            push!(movies,take!(flooding_rcv_buffer))
         end
+        if flag map(x->decide_if_save!(x,queries_request), movies) end
+
     end
 end
 
-
-
-function force_exit(ch::Channel)
-    while lowercase(Input("Type 'q' to quit search ")) != "q" continue end
-    put!(ch, true)
+function decide_if_save!(movie::Movie, queries_request)
+    if movie.query_id in queries_request
+        persist(movie)
+        pop!(queries_request, movie.query_id)
+    end
 end
 
 
@@ -217,7 +215,7 @@ Reply the asked file to sender
 """
 function reply_to_sender(request::FloodingMSG, s_buff::Channel, my_path::String, file::String)
     full_path = path * (path[end] == "/" ? "" : "/") * file
-    
+
     movie = Movie(my_path*file)
 
     put!(s_buff, Message(movie, movie.sender_port))
