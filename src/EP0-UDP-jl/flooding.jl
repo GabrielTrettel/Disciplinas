@@ -23,14 +23,14 @@ Base.println(m::String, x::String) = if m == mode println(x) end
 
 function flooding(modes::String="c")
     global mode = modes
-    rcv_msg_buffer = Channel{Any}(1024)   # | Those are used for sending/receiving
-    send_msg_buffer = Channel{Any}(1024)  # | messages by flooding protocol, not the file itself.
+    rcv_msg_buffer = Channel{Any}(102)   # | Those are used for sending/receiving
+    send_msg_buffer = Channel{Any}(102)  # | messages by flooding protocol, not the file itself.
 
     net          = get_network_interface()           # |
     flooding_net = get_flooding_interface(net.name)  # | Both are NetUtils.Interface
 
-    flooding_rcv_buffer = Channel{Any}(1024)  # This is used to receive the movie.
-    to_process_controller  = Channel{Any}(100)
+    flooding_rcv_buffer = Channel{Any}(10)  # This is used to receive the movie.
+    to_process_controller  = Channel{Any}(10)
 
 
     set_sign_of_life(net.name, net.port)
@@ -68,7 +68,7 @@ function flooding(modes::String="c")
     # Runs query dealer for answering searched data in distributed system
     @async begin
         try
-            flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
+            flood_handler(rcv_msg_buffer, send_msg_buffer, my_path)
         catch y
             show_stack_trace()
         end # try
@@ -157,7 +157,10 @@ function flood_replies_processor(flooding_rcv_buffer::Channel, to_process_contro
             flag = true
             push!(movies, take!(flooding_rcv_buffer))
         end
-        if flag map(x->decide_if_save!(x,queries_request, path), movies) end
+        if flag
+            map(m->decide_if_save!(m,queries_request, path), movies)
+            movies = []
+        end
     end
 end
 
@@ -169,7 +172,10 @@ function decide_if_save!(ans::FloodingMSG, queries_request::Set, path::String)
 
         persist(movie, path)
         pop!(queries_request, ans.query_id)
+        movie = nothing
+        return false
     end
+    return true
 end
 
 
@@ -197,8 +203,7 @@ function flood_msg(msg::FloodingMSG, s_buff::Channel)
         ss *= "$peer_name, "
         put!(s_buff, Message(msg, peer_port))
     end
-
-    println("s", " Flooding msg to those peers $(ss[1 : end-1])\n")
+    println(" Flooding msg to those peers $(ss[1 : end-1])\n")
     # === HERE WE FLOOD MSG TO ALL KNOWN PEERS ===
 end
 
@@ -208,11 +213,11 @@ end
 
 Handles incoming requests and forwards messages if doesn't have the file
 """
-function flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
+function flood_handler(rcv_msg_buffer, send_msg_buffer, my_path)
     received_requests = Set()
 
     while true
-        request::FloodingMSG = take!(rcv_msg_buffer)
+        request = take!(rcv_msg_buffer)
         r_id = "$(request.sender_name)-$(request.query_id)"
 
         if !(r_id in received_requests)
@@ -222,18 +227,21 @@ function flood_handler(rcv_msg_buffer, send_msg_buffer, my_path, net)
 
             if file != false
                 reply_to_sender(request, send_msg_buffer, my_path, file)
+                file = nothing
+                request = nothing
             else
                 println("s", " $CYELLOW I don't have it, flooding to others...")
                 flood_msg(request,send_msg_buffer)
             end
-
             push!(received_requests, r_id)
+
         else
             # REQUEST ALREADY PROCESSED, IGNORING
             continue
         end
     end
 end
+
 
 
 """
@@ -250,7 +258,7 @@ function reply_to_sender(request::FloodingMSG, s_buff::Channel, my_path::String,
     println("s", " $CYELLOW\t I have $(file), SENDING TO HIM...\n")
     put!(s_buff, Message(request, request.sender_port))
     movie = nothing
+    request = nothing
 end
-
 
 end # module

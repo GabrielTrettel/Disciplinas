@@ -12,7 +12,7 @@ function get_qry_from_user()
     search_for = ""
     while conf
         search_for = Input("$CYELLOW What movie are you looking for? ")
-        conf = "y" != lowercase(Input("$CYELLOW Are you sure of: $search_for? (y/n) \n"))
+        conf = "y" != lowercase(Input("$CYELLOW Are you sure of: $search_for? (y/n)"))
     end
     return search_for
 end

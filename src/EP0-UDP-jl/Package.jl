@@ -24,13 +24,16 @@ end
 function encode(x::Any) :: Array{UInt8}
     iob = PipeBuffer()
     Serialization.serialize(iob, x)
-    return iob.data
+    value = iob.data
+    close(iob)
+    return value
 end
 
 
 function decode(msgs::Vector{UInt8}) :: Any
     stream = PipeBuffer(msgs)
     original_data = Serialization.deserialize(stream)
+    close(stream)
     return original_data
 end
 
@@ -55,7 +58,6 @@ function encode_and_split(msg::Any) :: Array{Array{UInt8}}
 
         i += MAX_MSG_SIZE ; j+= MAX_MSG_SIZE ; seq += 1
         push!(dg_vec, encode(dg))
-        # push!(dg_vec, dg)
     end
     return dg_vec
 end
@@ -75,7 +77,9 @@ function decode_msg(dgrams) :: Any
     return full_msg
 end
 
-end # module
+end
+
+# module
 
 # using .Package
 

@@ -37,7 +37,7 @@ mutable struct Net_utils
             indicating how long a msg can be. In my computer, 65508 is the limit.
             - 1024 by convention
         =#
-        mtu = 30508
+        mtu = 50508
 
         new(port_queue, ports_owner, used_ports, host, mtu)
     end

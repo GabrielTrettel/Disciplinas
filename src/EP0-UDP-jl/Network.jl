@@ -97,24 +97,23 @@ function send_msg(send_msg_buffer::Channel{Any}, net::Interface) ::Nothing
 
     while true
         msg = take!(send_msg_buffer)
-
         data_grams = encode_and_split(msg.value)
-        total = length(data_grams)
 
+        total = length(data_grams)
         if total > 100
             println("Sending BIG msg, $(length(data_grams)) datagrams to send")
             p = Progress(total, barlen=20)
 
             for dg in data_grams
-                next!(p); sleep(0.01)
+                next!(p); sleep(0.1)
                 send(socket, host, msg.destination_port, dg)
             end
             finish!(p)
         else
             broadcast(x->send(socket, host, msg.destination_port, x), data_grams)
         end
+        msg = nothing
         data_grams = nothing
-
     end
 end
 

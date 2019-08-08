@@ -40,7 +40,9 @@ mutable struct Movie
     size     :: Real      # MBytes
     duration :: Real      # minutes
     function Movie(file_with_path::String)
-        c = read(file_with_path)
+        io = open(file_with_path)
+        c = read(io)
+        close(io)
         file_name = split(file_with_path, "/")[end]
         size = stat(file_with_path).size / 1024.0
         duration = VideoIO.get_duration(file_with_path) / 60.0
@@ -151,6 +153,8 @@ function remove_old_files!(files::Vector{File}, t::Float64, dt::Float64)
     filter!(f_dt, files)
 end
 
+
+
 """
     persist(file::Movie, path:String)
 
@@ -160,7 +164,9 @@ persist(file::Movie, path::String) = p_movie(file, path)
 
 function p_movie(file::Movie, path::String)
     try
-        write(path*file.name, file.content)
+        io = open(path*file.name, "w")
+        write(io, file.content)
+        close(io)
     catch
         throw("Invalid path \"$path\" to save \"$file\"")
     end
