@@ -83,6 +83,7 @@ function recv_msg(rcv_buff::Channel{Any}, net::Interface)
             msg = decode_msg(pop!(datagrams_map, msg_id))
 
             put!(rcv_buff, msg)
+            msg = nothing
         end
     end
 end
@@ -105,15 +106,14 @@ function send_msg(send_msg_buffer::Channel{Any}, net::Interface) ::Nothing
             p = Progress(total, barlen=20)
 
             for dg in data_grams
-                next!(p)
-                sleep(0.1)
+                next!(p); sleep(0.01)
                 send(socket, host, msg.destination_port, dg)
             end
-
+            finish!(p)
         else
             broadcast(x->send(socket, host, msg.destination_port, x), data_grams)
         end
-
+        data_grams = nothing
 
     end
 end
@@ -167,10 +167,3 @@ end
 
 
 end # module
-
-
-f(x,t) = 2x+t
-
-a = [1,2,3,4,5]
-
-f.(10,a)

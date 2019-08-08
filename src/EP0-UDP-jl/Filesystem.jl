@@ -44,7 +44,6 @@ mutable struct Movie
         file_name = split(file_with_path, "/")[end]
         size = stat(file_with_path).size / 1024.0
         duration = VideoIO.get_duration(file_with_path) / 60.0
-
         new(file_name, c, size, duration)
     end
 end

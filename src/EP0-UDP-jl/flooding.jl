@@ -155,7 +155,7 @@ function flood_replies_processor(flooding_rcv_buffer::Channel, to_process_contro
         flag = false
         while isready(flooding_rcv_buffer)
             flag = true
-            push!(movies,take!(flooding_rcv_buffer))
+            push!(movies, take!(flooding_rcv_buffer))
         end
         if flag map(x->decide_if_save!(x,queries_request, path), movies) end
     end
@@ -249,6 +249,7 @@ function reply_to_sender(request::FloodingMSG, s_buff::Channel, my_path::String,
 
     println("s", " $CYELLOW\t I have $(file), SENDING TO HIM...\n")
     put!(s_buff, Message(request, request.sender_port))
+    movie = nothing
 end
 
 
